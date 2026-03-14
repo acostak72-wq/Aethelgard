@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aethelgard OS | Cloud Terminal</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        :root { 
+            --gold: #d4af37; --am: #00ff88; --bg: #010101; --gemini: #88ddff; --danger: #ff4d4d;
+        }
+        body { font-family: 'JetBrains Mono', monospace; background: var(--bg); color: white; margin: 0; overflow: hidden; font-size: 11px; }
+        
+        /* Pantalla de Bloqueo */
+        #lock-screen {
+            position: fixed; inset: 0; background: var(--bg); z-index: 9999;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+        }
+        .pin-input {
+            background: #000; border: 1px solid var(--gold); color: var(--gold);
+            padding: 15px; text-align: center; font-size: 1.5rem; border-radius: 12px; outline: none;
+        }
+
+        .terminal { display: grid; grid-template-columns: 1fr 380px; gap: 20px; padding: 20px; height: 100vh; box-sizing: border-box; filter: blur(20px); transition: 0.5s; }
+        .matrix-container { background: rgba(255,255,255,0.02); border: 1px solid #222; border-radius: 20px; padding: 20px; display: flex; flex-direction: column; }
+        .node-matrix { display: grid; grid-template-columns: repeat(10, 1fr); gap: 6px; flex-grow: 1; }
+        .node { aspect-ratio: 1; border: 1px solid #1a1a1a; border-radius: 6px; background: #050505; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 7px; transition: 0.3s; position: relative; }
+        .node-bar { width: 80%; height: 3px; background: #222; margin-top: 4px; border-radius: 2px; }
+        .node-fill { height: 100%; transition: width 0.3s; background: var(--am); }
+        .node.swapping { background: white; color: black; transform: scale(1.1); z-index: 10; }
+        
+        .sidebar { display: flex; flex-direction: column; gap: 12px; }
+        .stat-card { background: #080808; border: 1px solid #1a1a1a; padding: 15px; border-radius: 16px; border-left: 3px solid var(--gold); }
+        .val-big { font-size: 2rem; font-weight: 900; color: var(--gold); }
+        #console { flex-grow: 1; background: #000; padding: 12px; border-radius: 10px; border: 1px solid #111; overflow-y: auto; font-size: 8px; color: #444; }
+        .vault-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .v-box { background: #000; padding: 8px; border-radius: 6px; border: 1px solid #151515; }
+        .btn { width: 100%; padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; text-transform: uppercase; margin-top: 5px; }
+        .btn-gold { background: var(--gold); color: black; }
+    </style>
+</head>
+<body>
+
+<div id="lock-screen">
+    <div style="color: var(--gold); margin-bottom: 20px; letter-spacing: 3px;">AETHELGARD CLOUD ACCESS</div>
+    <input type="password" id="pin" class="pin-input" placeholder="ENTER PIN" maxlength="4">
+    <button onclick="unlock()" style="background: none; border: 1px solid #333; color: #555; margin-top: 20px; cursor: pointer; padding: 5px 15px; border-radius: 20px;">ACCESS</button>
+</div>
+
+<div class="terminal" id="main-terminal">
+    <div class="matrix-container">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+            <div>
+                <h1 style="color: var(--gold); margin:0; font-size: 1.2rem; letter-spacing: 2px;">CENTURIA CLOUD</h1>
+                <div style="color: var(--am); font-size: 0.6rem;">BROKER IA SOBERANO | VERCEL DEPLOYED</div>
+            </div>
+            <div id="jle-ticker" style="color: #555; font-size: 0.7rem;">JLE/COP: $974</div>
+        </div>
+        <div class="node-matrix" id="matrix"></div>
+        <div style="margin-top: 15px; background: #080808; padding: 10px; border-radius: 12px;">
+            <button class="btn" style="background: var(--am); color: black;" onclick="liquidarNodos()">LIQUIDAR NODOS (USD)</button>
+        </div>
+    </div>
+
+    <div class="sidebar">
+        <div class="stat-card">
+            <div style="font-size: 0.5rem; color: #666;">REVENUE TOTAL (USD)</div>
+            <div class="val-big" id="rev-val">$0.00</div>
+        </div>
+        <div class="vault-grid">
+            <div class="v-box"><span style="color:#555; font-size:0.5rem;">SUSTENTO</span><div id="v-sus">$0.00</div></div>
+            <div class="v-box"><span style="color:#555; font-size:0.5rem;">OPERATIVA</span><div id="v-op">$0.00</div></div>
+            <div class="v-box"><span style="color:#555; font-size:0.5rem;">RESERVA</span><div id="v-res">$0.00</div></div>
+            <div class="v-box" style="border-color: var(--gold);"><span style="color:var(--gold); font-size:0.5rem;">TAX (5%)</span><div id="v-tax">$0.00</div></div>
+        </div>
+        <div id="console"></div>
+        <div class="stat-card">
+            <button class="btn btn-gold" onclick="generarSoporte()">SOPORTE LEGAL PDF</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const PIN_CORRECTO = "2026"; // Cambia tu PIN aquí Socia
+    let store = JSON.parse(localStorage.getItem('aethel_cloud')) || { total: 0, sus: 0, op: 0, res: 0, tax: 0 };
+    let nodes = [];
+
+    function unlock() {
+        const input = document.getElementById('pin').value;
+        if(input === PIN_CORRECTO) {
+            document.getElementById('lock-screen').style.display = 'none';
+            document.getElementById('main-terminal').style.filter = 'none';
+            log("Acceso autorizado. Bienvenida, Socia.", "var(--am)");
+        } else {
+            alert("PIN INCORRECTO");
+        }
+    }
+
+    // Inicializar Matriz 100 Nodos
+    const REGIONS = ["NOR", "ICE", "CAN", "COL", "CHL", "UK", "GER", "JPN", "USA", "FIN"];
+    const matrixEl = document.getElementById('matrix');
+    for(let i=0; i<100; i++) {
+        const region = REGIONS[Math.floor(Math.random() * REGIONS.length)];
+        const energy = Math.random() * 100;
+        nodes.push({ id: i, region: region, energy: energy });
+        const div = document.createElement('div');
+        div.className = 'node';
+        div.id = `node-${i}`;
+        div.innerHTML = `<span>${region}</span><div class="node-bar"><div class="node-fill" id="fill-${i}" style="width:${energy}%"></div></div>`;
+        matrixEl.appendChild(div);
+    }
+
+    function log(msg, color="#444") {
+        const c = document.getElementById('console');
+        const d = document.createElement('div');
+        d.style.color = color;
+        d.innerText = `> ${msg}`;
+        c.prepend(d);
+    }
+
+    // IA Swaps ($0.75 fee)
+    setInterval(() => {
+        const needy = nodes.find(n => n.energy < 20);
+        const surplus = nodes.find(n => n.energy > 80);
+        if(needy && surplus) {
+            needy.energy += 20; surplus.energy -= 20;
+            procesarIngreso(0.75, `IA SWAP: ${surplus.region} ➔ ${needy.region}`);
+        }
+        nodes.forEach((n, i) => {
+            n.energy = Math.max(0, Math.min(100, n.energy + (Math.random() * 4 - 2)));
+            const fill = document.getElementById(`fill-${i}`);
+            if(fill) fill.style.width = n.energy + "%";
+        });
+    }, 4000);
+
+    function procesarIngreso(monto, desc) {
+        let base = Math.min(monto, 500);
+        let exc = Math.max(0, monto - 500);
+        store.total += monto;
+        store.sus += (base * 0.8) + (exc * 0.35);
+        store.op += (base * 0.15) + (exc * 0.30);
+        store.res += (base * 0.05);
+        store.tax += (monto * 0.05); // Tu regla del 5%
+        updateUI();
+        log(desc, "var(--am)");
+    }
+
+    function liquidarNodos() {
+        let totalUSD = (nodes.reduce((a, b) => a + b.energy, 0)) * 0.02;
+        procesarIngreso(totalUSD, "LIQUIDACIÓN CLOUD CENTURIA");
+        nodes.forEach(n => n.energy = 0);
+    }
+
+    function updateUI() {
+        document.getElementById('rev-val').innerText = `$${store.total.toFixed(2)}`;
+        document.getElementById('v-sus').innerText = `$${store.sus.toFixed(2)}`;
+        document.getElementById('v-op').innerText = `$${store.op.toFixed(2)}`;
+        document.getElementById('v-res').innerText = `$${store.res.toFixed(2)}`;
+        document.getElementById('v-tax').innerText = `$${store.tax.toFixed(2)}`;
+        localStorage.setItem('aethel_cloud', JSON.stringify(store));
+    }
+
+    function generarSoporte() {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        doc.setFont("courier", "bold");
+        doc.text("AETHELGARD | CERTIFICADO SOBERANO", 20, 20);
+        doc.text(`TOTAL USD: $${store.total.toFixed(2)}`, 20, 40);
+        doc.text(`RESERVA TAX (5%): $${store.tax.toFixed(2)}`, 20, 50);
+        doc.text(`CONCEPTO: SERVICIOS TÉCNICOS RED JLE`, 20, 60);
+        doc.save(`Aethelgard_Cloud_Soporte.pdf`);
+    }
+
+    updateUI();
+</script>
+</body>
+</html>
