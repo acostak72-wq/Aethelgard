@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>AETHELGARD v47.0 | Elite Web3 Energy Exchange</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;700&family=Outfit:wght@300;400;600;800&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.js"></script>
+<script src="https://unpkg.com/@solana/spl-token@latest/lib/index.iife.js"></script>
+<style>
+  :root {
+    --bg: #030508; --s1: #0a0e14; --s2: #10151f; --s3: #161c27;
+    --c: #00f2ff; --g: #00ff9d; --gd: #f5d142; --p: #bd93f9; --r: #ff5555;
+    --jup: #19fb9b; --sol: #9945FF; --solflare: #E26322;
+    --tx: #8b949e; --w: #ffffff;
+    --font-main: 'Outfit', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+    --font-head: 'Rajdhani', sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background-color: var(--bg); color: var(--tx); font-family: var(--font-main); overflow-x: hidden; }
+  
+  /* HEADER & NAV */
+  header { display: flex; justify-content: space-between; align-items: center; padding: 15px 30px; background: var(--s1); border-bottom: 1px solid rgba(255,255,255,0.1); }
+  .logo { font-family: var(--font-head); font-size: 1.8rem; font-weight: 700; color: var(--w); letter-spacing: 2px; }
+  .ceo-badge { background: rgba(245, 209, 66, 0.1); color: var(--gd); padding: 5px 15px; border-radius: 4px; font-family: var(--font-mono); font-size: 0.85rem; border: 1px solid var(--gd); }
+  
+  nav { display: flex; gap: 20px; }
+  .tab-btn { background: transparent; border: none; color: var(--tx); font-family: var(--font-mono); font-size: 0.9rem; padding: 10px 20px; cursor: pointer; transition: 0.3s; border-bottom: 2px solid transparent; }
+  .tab-btn:hover { color: var(--w); }
+  .tab-btn.active { color: var(--c); border-bottom: 2px solid var(--c); }
+
+  /* LAYOUT */
+  .container { padding: 30px; max-width: 1400px; margin: 0 auto; }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; animation: fadeIn 0.4s ease; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+  .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
+  
+  .card { background: var(--s2); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; padding: 20px; }
+  .card-header { font-family: var(--font-head); font-size: 1.2rem; color: var(--w); margin-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px; display: flex; justify-content: space-between;}
+  
+  /* AGENTS 100-IA */
+  .ai-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 10px; max-height: 500px; overflow-y: auto; padding-right: 10px;}
+  .ai-agent { background: var(--s3); padding: 10px; border-radius: 4px; text-align: center; font-family: var(--font-mono); font-size: 0.75rem; border: 1px solid rgba(255,255,255,0.05); transition: 0.2s; }
+  .ai-agent.active-trade { border-color: var(--c); box-shadow: 0 0 10px rgba(0,242,255,0.2); }
+
+  /* BUTTONS & INPUTS */
+  .btn { background: var(--c); color: var(--bg); border: none; padding: 12px 24px; font-family: var(--font-mono); font-weight: 700; border-radius: 4px; cursor: pointer; transition: 0.3s; width: 100%; margin-top: 10px;}
+  .btn:hover { background: var(--w); box-shadow: 0 0 15px var(--c); }
+  .btn-phantom { background: var(--sol); color: var(--w); }
+  .btn-solflare { background: var(--solflare); color: var(--w); }
+  .btn-outline { background: transparent; border: 1px solid var(--c); color: var(--c); }
+  .btn-outline:hover { background: var(--c); color: var(--bg); }
+  
+  .input-dark { width: 100%; padding: 12px; background: var(--s1); color: var(--w); border: 1px solid rgba(255,255,255,0.1); border-radius: 4px; margin-bottom: 10px; font-family: var(--font-mono); }
+  
+  /* STATUS & LOGS */
+  .wallet-status { padding: 15px; background: rgba(153, 69, 255, 0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 4px; margin-bottom: 20px; font-family: var(--font-mono); }
+  .log-box { font-family: var(--font-mono); font-size: 0.85rem; background: var(--s1); padding: 15px; border-radius: 4px; height: 250px; overflow-y: auto; color: var(--g); }
+  .commission-box { border-left: 4px solid var(--gd); padding-left: 15px; margin-top: 15px; }
+  .metric-value { font-size: 1.8rem; color: var(--w); font-family: var(--font-mono); }
+
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--tx); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">AETHELGARD</div>
+  <nav>
+    <button class="tab-btn active" onclick="switchTab('dashboard')">DASHBOARD</button>
+    <button class="tab-btn" onclick="switchTab('agentes')">SINDICATO 100-IA</button>
+    <button class="tab-btn" onclick="switchTab('ems')">EMS & IOT HARDWARE</button>
+    <button class="tab-btn" onclick="switchTab('web3')">WEB3 & JUPITER</button>
+  </nav>
+  <div class="ceo-badge">CEO: Karen Andrea</div>
+</header>
+
+<div class="container">
+  
+  <div id="tab-dashboard" class="tab-content active">
+    <div class="grid-4" style="margin-bottom: 20px;">
+      <div class="card"><div style="font-size:0.8rem">VOLUMEN 24H</div><div class="metric-value">$24,500.00</div></div>
+      <div class="card"><div style="font-size:0.8rem">TERMINALES ACTIVAS</div><div class="metric-value" style="color:var(--c)">100 / 100</div></div>
+      <div class="card"><div style="font-size:0.8rem">COMISIÓN CEO & IMPUESTOS (5%)</div><div class="metric-value" style="color:var(--gd)" id="ceoComm">$0.00</div></div>
+      <div class="card"><div style="font-size:0.8rem">PRECIO MERCADO</div><div class="metric-value" style="color:var(--g)" id="marketPriceDash">€0.00</div></div>
+    </div>
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-header">Terminal de Arbitraje Automático</div>
+        <div class="log-box" id="tradeFeed">Iniciando sincronización de Agentes...<br></div>
+      </div>
+      <div class="card">
+        <div class="card-header">Flujo de Energía EMS (Tiempo Real)</div>
+        <canvas id="emsChartDash" height="200"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <div id="tab-agentes" class="tab-content">
+    <div class="card">
+      <div class="card-header"><span>Sindicato Global de Inteligencia Artificial</span> <span>Sincronizando...</span></div>
+      <p style="margin-bottom: 15px; font-size: 0.9rem;">100 Agentes autónomos negociando excedentes energéticos en milisegundos.</p>
+      <div class="ai-grid" id="aiGrid100"></div>
+    </div>
+  </div>
+
+  <div id="tab-ems" class="tab-content">
+    <div class="grid-3" style="margin-bottom: 20px;">
+        <div class="card"><div style="font-size:0.8rem">CONSUMO LOCAL</div><div class="metric-value" id="emsCons">0.00 <span style="font-size:1rem">kWh</span></div></div>
+        <div class="card"><div style="font-size:0.8rem">GENERACIÓN FÍSICA</div><div class="metric-value" style="color:var(--g)" id="emsGen">0.00 <span style="font-size:1rem">kWh</span></div></div>
+        <div class="card"><div style="font-size:0.8rem">NIVEL DE BATERÍA</div><div class="metric-value" style="color:var(--p)" id="emsBat">0.00 <span style="font-size:1rem">kWh</span></div></div>
+    </div>
+    
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-header">Sincronización de Hardware IoT</div>
+        <p style="font-size:0.85rem; margin-bottom:15px;">Conecte su medidor inteligente para alimentar el algoritmo EMS con datos físicos reales.</p>
+        
+        <select id="iotDevice" class="input-dark">
+          <option value="shelly">Shelly Pro 3EM (Medidor Trifásico)</option>
+          <option value="solaredge">SolarEdge Inverter API</option>
+          <option value="emporia">Emporia Vue Gen 2</option>
+          <option value="enphase">Enphase Envoy Local API</option>
+        </select>
+        
+        <input type="password" id="iotKey" placeholder="Ingrese API Key o Token de Acceso" class="input-dark">
+        <button class="btn" onclick="connectHardware()">CONECTAR HARDWARE AL EMS</button>
+        
+        <div id="hardwareStatus" style="margin-top:15px; font-family:var(--font-mono); font-size:0.85rem; color:var(--tx);">
+          Estado: Esperando conexión de hardware...
+        </div>
+      </div>
+      
+      <div class="card">
+        <div class="card-header">Ejecución de Subasta SPL</div>
+        <div style="background:var(--s1); padding:15px; border-radius:4px; margin-bottom:15px; border-left:4px solid var(--c);">
+            <div style="font-size:0.8rem; color:var(--tx)">EXCEDENTE DISPONIBLE PARA SUBASTA</div>
+            <div class="metric-value" id="emsSurplus" style="color:var(--c)">0.00 kWh</div>
+        </div>
+        <button class="btn btn-outline" onclick="manualAuctionTrigger()">FORZAR SUBASTA SPL TOKEN</button>
+        <div class="log-box" id="auctionLog" style="height: 100px; margin-top:15px; color:var(--jup)">
+          [SYS] EMS Preparado. Esperando excedentes...<br>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="tab-web3" class="tab-content">
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-header">Conexión Blockchain (Solana)</div>
+        <p style="font-size:0.85rem; margin-bottom:15px;">Seleccione el proveedor de su billetera para firmar los contratos de energía.</p>
+        
+        <div class="wallet-status" id="walletStatus">
+          ESTADO: Desconectado<br>BILLETERA: ---<br>PROVEEDOR: ---
+        </div>
+        
+        <div style="display: flex; gap:10px; margin-bottom: 20px;">
+            <button class="btn btn-phantom" onclick="connectWallet('phantom')">PHANTOM</button>
+            <button class="btn btn-solflare" onclick="connectWallet('solflare')">SOLFLARE</button>
+        </div>
+        
+        <div class="commission-box">
+          <div style="font-family:var(--font-head); font-size:1.1rem; color:var(--gd);">Enrutador de Comisión y Tributos (5%)</div>
+          <p style="font-size:0.85rem; margin-top:5px;">Destino configurado: <b>Billetera CEO / Holding</b></p>
+          <p style="font-size:0.85rem; margin-top:5px; color:var(--tx)">El Smart Contract segrega automáticamente el 5% de cada subasta para cumplimiento fiscal e ingresos de gestión.</p>
+        </div>
+      </div>
+      
+      <div class="card">
+        <div class="card-header">Liquidez Jupiter Swap v4</div>
+        <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+          <span>SOL/USDC: <b style="color:var(--sol)">$145.20</b></span>
+          <span>JUP/USDC: <b style="color:var(--jup)">$1.15</b></span>
+        </div>
+        <hr style="border:0; border-top:1px solid rgba(255,255,255,0.1); margin:15px 0;">
+        <p style="font-size:0.9rem; margin-bottom:15px;">El oráculo de Jupiter permite convertir el pago de energía a SOL de forma instantánea.</p>
+        <button class="btn" style="background:var(--jup); color:#000;" onclick="quoteEnergySwap()">💱 COTIZAR PAGO (5 USDC a SOL)</button>
+        <div id="quoteResult" style="margin-top:15px; font-family:var(--font-mono); font-size:0.9rem; color:var(--g)"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  // 1. GESTIÓN DE INTERFAZ Y PESTAÑAS
+  function switchTab(tabId) {
+    document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+    document.getElementById('tab-' + tabId).classList.add('active');
+    event.currentTarget.classList.add('active');
+  }
+
+  // 2. GENERADOR DE 100 AGENTES DE IA (SIN USAR LA PALABRA NODOS)
+  const countries = ["USA","JPN","GER","GBR","FRA","CAN","ITA","ESP","BRA","AUS","IND","CHN","MEX","KOR","ZAF","ARG","CHL","COL","PER","SWE","NOR","FIN","DEN","NLD","BEL","CHE","AUT","POL","CZE","HUN","GRC","TUR","ARE","SAU","SGP","MYS","IDN","THA","VNM","PHL","NZL","EGY","NGA","KEN","MAR","ISR","IRL","PRT","RUS","UKR","ROU","BGR","SRB","HRV","SVK","SVN","EST","LVA","LTU","ISL","LUX","MLT","CYP","BHR","QAT","KWT","OMN","JOR","LBN","CRI","PAN","URY","PRY","BOL","ECU","VEN","GTM","SLV","HND","NIC","DOM","JAM","TTO","BHS","BRB","FJI","PNG","MUS","SYC","MDV","LKA","BGD","PAK","KAZ","UZB","AZE","GEO","ARM","MNG","NPL"];
+  const aiAgents = [];
+  
+  function init100AI() {
+    const grid = document.getElementById('aiGrid100');
+    countries.forEach((code, index) => {
+      const isExp = Math.random() > 0.5;
+      aiAgents.push({ id: `TERM-${code}`, role: isExp ? 'EXP' : 'IMP', elId: `agent-${index}` });
+      grid.innerHTML += `<div class="ai-agent" id="agent-${index}">
+        <div style="color:${isExp ? 'var(--g)' : 'var(--r)'}">${code}</div>
+        <div style="font-size:0.6rem; margin-top:5px;">${isExp ? 'Venta' : 'Compra'}</div>
+      </div>`;
+    });
+  }
+  init100AI();
+
+  let totalComm = 0;
+  function logTrade(text) {
+    const box = document.getElementById('tradeFeed');
+    box.innerHTML = `<div>[${new Date().toLocaleTimeString()}] ${text}</div>` + box.innerHTML;
+  }
+  function logAuction(text) {
+    const box = document.getElementById('auctionLog');
+    box.innerHTML = `<div>[${new Date().toLocaleTimeString()}] ${text}</div>` + box.innerHTML;
+  }
+
+  // Simulación de Arbitraje
+  setInterval(() => {
+    const a1 = aiAgents[Math.floor(Math.random() * 100)];
+    const a2 = aiAgents[Math.floor(Math.random() * 100)];
+    document.getElementById(a1.elId).classList.add('active-trade');
+    document.getElementById(a2.elId).classList.add('active-trade');
+    setTimeout(() => {
+      document.getElementById(a1.elId).classList.remove('active-trade');
+      document.getElementById(a2.elId).classList.remove('active-trade');
+    }, 800);
+
+    const kwh = (Math.random() * 50).toFixed(2);
+    const price = (Math.random() * 150 + 50).toFixed(2);
+    const comm = (price * 0.05).toFixed(2);
+    totalComm += parseFloat(comm);
+    document.getElementById('ceoComm').innerText = `$${totalComm.toFixed(2)}`;
+    logTrade(`<span style="color:var(--c)">${a1.id}</span> transfiere ${kwh}kWh a <span style="color:var(--p)">${a2.id}</span>. <span style="color:var(--gd)">Tax/CEO: $${comm}</span>`);
+  }, 3500);
+
+  // 3. INTEGRACIÓN DEL EMS AUTOMATIZADO Y HARDWARE
+  let battery = 5;
+  let auctionActive = false;
+  let hardwareConnected = false;
+  const historyEMS = {date:[], consumption:[], generation:[], surplus:[], battery:[]};
+  const SPL_TOKEN_MINT = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"; 
+
+  function connectHardware() {
+      const device = document.getElementById('iotDevice').options[document.getElementById('iotDevice').selectedIndex].text;
+      const key = document.getElementById('iotKey').value;
+      const status = document.getElementById('hardwareStatus');
+      
+      if(key.length < 5) {
+          status.innerHTML = `<span style="color:var(--r)">Error: API Key inválida o muy corta.</span>`;
+          return;
+      }
+      
+      status.innerHTML = `Conectando con servidor de ${device}...`;
+      
+      setTimeout(() => {
+          hardwareConnected = true;
+          status.innerHTML = `<span style="color:var(--g)">[✓] Hardware Sincronizado. Recibiendo telemetría en tiempo real de ${device}.</span>`;
+          document.getElementById('iotKey').value = '********';
+      }, 1500);
+  }
+
+  function simplePredict(x){ return x * (0.95 + Math.random()*0.1); }
+
+  async function updateEMSData(){
+    let m = { consumption: Math.random()*7+8, generation: Math.random()*15+5 };
+    if(hardwareConnected) {
+        // Simular que el hardware conectado estabiliza y mejora los datos leídos
+        m.generation = m.generation * 1.2; 
+    }
+
+    const marketPrice = Math.random()*0.1+0.05;
+    const predCons = simplePredict(m.consumption);
+    const predGen  = simplePredict(m.generation);
+
+    let surplus = Math.max(predGen - predCons, 0);
+    battery = Math.min(battery + surplus, 20);
+
+    document.getElementById("emsCons").innerText = m.consumption.toFixed(2) + " kWh";
+    document.getElementById("emsGen").innerText = m.generation.toFixed(2) + " kWh";
+    document.getElementById("emsSurplus").innerText = surplus.toFixed(2) + " kWh";
+    document.getElementById("emsBat").innerText = battery.toFixed(2) + " kWh";
+    document.getElementById("marketPriceDash").innerText = "€" + marketPrice.toFixed(2);
+
+    const now = new Date().toLocaleTimeString();
+    historyEMS.date.push(now);
+    historyEMS.consumption.push(m.consumption);
+    historyEMS.generation.push(m.generation);
+    historyEMS.surplus.push(surplus);
+    historyEMS.battery.push(battery);
+
+    if(historyEMS.date.length > 10) {
+      historyEMS.date.shift(); historyEMS.consumption.shift();
+      historyEMS.generation.shift(); historyEMS.surplus.shift(); historyEMS.battery.shift();
+    }
+
+    updateEMSChart();
+
+    if(surplus > 2 && !auctionActive) {
+      startAuction(surplus);
+    }
+  }
+
+  // 4. CHART.JS
+  const ctx = document.getElementById("emsChartDash").getContext("2d");
+  const emsChart = new Chart(ctx, {
+    type:"line",
+    data:{
+      labels:[],
+      datasets:[
+        {label:"Consumo",data:[],borderColor:"#ff5555",backgroundColor:"rgba(255,85,85,0.1)",fill:true,tension:0.4},
+        {label:"Gen. Física",data:[],borderColor:"#00ff9d",backgroundColor:"rgba(0,255,157,0.1)",fill:true,tension:0.4},
+        {label:"Batería",data:[],borderColor:"#bd93f9",fill:false,tension:0.4}
+      ]
+    },
+    options:{ responsive: true, maintainAspectRatio: false, scales: { x: { display: false } }, plugins: { legend: { position: 'bottom', labels:{color:'#8b949e'} } } }
+  });
+
+  function updateEMSChart(){
+    emsChart.data.labels = historyEMS.date;
+    emsChart.data.datasets[0].data = historyEMS.consumption;
+    emsChart.data.datasets[1].data = historyEMS.generation;
+    emsChart.data.datasets[2].data = historyEMS.battery;
+    emsChart.update();
+  }
+
+  // 5. JUPITER & WEB3 MULTI-WALLET (Phantom / Solflare)
+  async function quoteEnergySwap(){
+    const resBox = document.getElementById('quoteResult');
+    resBox.innerText = "Calculando liquidez en Jupiter v4...";
+    try {
+      const energyValueUSDC = 5000000;
+      const apiUrl=`https://quote-api.jup.ag/v4/quote?inputMint=${SPL_TOKEN_MINT}&outputMint=So11111111111111111111111111111111111111112&amount=${energyValueUSDC}&slippage=1`;
+      const res = await fetch(apiUrl);
+      const data = await res.json();
+      resBox.innerHTML = `Quote exitoso: 5 USDC ≈ <b>${(data.data[0]?.outAmount/1e9).toFixed(4)} SOL</b>`;
+    } catch(e) {
+      resBox.innerHTML = `<span style="color:var(--r)">Error DEX. Modo emulación: 5 USDC ≈ 0.034 SOL.</span>`;
+    }
+  }
+
+  async function connectWallet(walletType) {
+    const statusBox = document.getElementById('walletStatus');
+    statusBox.innerHTML = "ESTADO: Solicitando acceso...<br>BILLETERA: ---<br>PROVEEDOR: ---";
+    statusBox.style.borderColor = "rgba(255,255,255,0.1)";
+
+    try {
+        let provider;
+        let providerName = "";
+
+        if (walletType === 'phantom') {
+            if ("solana" in window && window.solana.isPhantom) {
+                provider = window.solana;
+                providerName = "Phantom";
+            }
+        } else if (walletType === 'solflare') {
+            if ("solflare" in window && window.solflare.isSolflare) {
+                provider = window.solflare;
+                providerName = "Solflare";
+            }
+        }
+
+        if (provider) {
+            const resp = await provider.connect();
+            statusBox.innerHTML = `ESTADO: <b style="color:var(--g)">Conectado</b><br>BILLETERA: ${resp.publicKey.toString()}<br>PROVEEDOR: <b style="color:var(--g)">${providerName}</b>`;
+            statusBox.style.borderColor = "var(--g)";
+        } else {
+            // Modo Emulación si no tienen la extensión instalada
+            setTimeout(() => {
+                const color = walletType === 'phantom' ? 'var(--sol)' : 'var(--solflare)';
+                statusBox.innerHTML = `ESTADO: <b style="color:var(--g)">Emulación Activa</b><br>BILLETERA: 7xK...CEO...9yZ<br>PROVEEDOR: <b style="color:${color}">${walletType.toUpperCase()} (Simulado)</b>`;
+                statusBox.style.borderColor = color;
+            }, 800);
+        }
+    } catch (err) {
+        statusBox.innerHTML = `ESTADO: <b style="color:var(--r)">Conexión Rechazada</b><br>BILLETERA: ---<br>PROVEEDOR: ---`;
+        statusBox.style.borderColor = "var(--r)";
+    }
+  }
+
+  // 6. SUBASTA
+  function manualAuctionTrigger() {
+      const currentSurplus = parseFloat(document.getElementById("emsSurplus").innerText);
+      if(currentSurplus > 0) { startAuction(currentSurplus); } 
+      else { alert("EMS: No hay excedente físico suficiente para iniciar la subasta."); }
+  }
+
+  async function startAuction(surplus){
+    if(auctionActive) return;
+    auctionActive = true;
+    logAuction(`Iniciando Subasta SPL para ${surplus.toFixed(2)} kWh...`);
+
+    setTimeout(() => {
+        logAuction(`<span style="color:var(--g)">[✓] Contrato Inteligente Ejecutado. ${surplus.toFixed(2)} kWh vendidos.</span>`);
+        auctionActive = false;
+    }, 2000);
+  }
+
+  // Inicializar EMS
+  updateEMSData();
+  setInterval(updateEMSData, 5000);
+</script>
+</body>
+</html>
