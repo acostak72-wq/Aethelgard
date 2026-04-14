@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AETHELGARD OMNI-CORE v13.0 | SUPREMA ABSOLUTA</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;700;800&family=Outfit:wght@300;600;800;900&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+
+    <style>
+        :root {
+            --bg: #010204; --panel: rgba(10, 11, 16, 0.98); --glw: #00ffa3; 
+            --sol: #9945FF; --eurd: #0A58CA; --aeth: #FFD700; --eco: #22c55e;
+            --crisis: #ff1e1e; --arctic: #00F2FF; --neg: #e879f9; 
+            --ai-aura: rgba(157, 0, 255, 0.3); --ufd: #ff5e00; --omie: #0055ff; --ree: #ff0055;
+        }
+        body { background-color: var(--bg); color: #8b949e; font-family: 'Outfit', sans-serif; font-size: 10px; overflow: hidden; margin: 0; }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+        
+        /* HARDWARE RACK UI */
+        .glass-panel { background: var(--panel); backdrop-filter: blur(30px); border: 1px solid rgba(255,215,0,0.1); border-radius: 4px; position: relative; overflow: hidden; }
+        .rack-unit { background: linear-gradient(180deg, #0d0f16 0%, #050608 100%); border: 1px solid rgba(255,255,255,0.05); border-radius: 4px; }
+        .crisis-alert { animation: alert-flash 1s infinite alternate; }
+        @keyframes alert-flash { from { border-color: var(--crisis); box-shadow: 0 0 10px var(--crisis); } to { border-color: #fff; box-shadow: 0 0 30px var(--crisis); } }
+
+        /* THE LIVING AI ORB (AETHEL) */
+        .ai-orb-container { position: relative; width: 100px; height: 100px; display: flex; justify-content: center; align-items: center; }
+        .ai-sphere { width: 50px; height: 50px; border-radius: 50%; background: radial-gradient(circle, #fff, var(--aeth)); box-shadow: 0 0 50px var(--aeth); animation: float 4s infinite ease-in-out; z-index: 5; }
+        .neural-ring { position: absolute; width: 85px; height: 85px; border: 1px dashed var(--glw); border-radius: 50%; animation: spin 8s linear infinite; opacity: 0.4; }
+        .neural-ring-outer { position: absolute; width: 115px; height: 115px; border: 1px solid var(--sol); border-radius: 50%; animation: spin-reverse 15s linear infinite; opacity: 0.2; }
+
+        @keyframes float { 0%, 100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-10px) scale(1.05); } }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+        @keyframes spin-reverse { 100% { transform: rotate(-360deg); } }
+
+        /* BATTERY & STATUS */
+        .battery-shell { border: 2px solid var(--arctic); border-radius: 4px; padding: 1px; width: 80px; height: 18px; position: relative; }
+        .battery-fill { height: 100%; transition: width 0.5s ease; background: linear-gradient(90deg, var(--eco), var(--glw)); box-shadow: 0 0 10px var(--glw); }
+        .charging-effect { animation: charge-pulse 1s infinite; }
+        @keyframes charge-pulse { 0% { opacity: 1; } 50% { opacity: 0.4; } }
+
+        .btn-side { width: 100%; text-align: left; padding: 12px; font-weight: 800; text-transform: uppercase; font-size: 8px; border-left: 3px solid transparent; transition: 0.3s; color: #555; }
+        .btn-side.active { color: var(--aeth); border-left-color: var(--aeth); background: rgba(157, 0, 255, 0.05); }
+        .btn-master { font-weight: 900; padding: 10px; clip-path: polygon(5% 0, 100% 0, 95% 100%, 0 100%); transition: 0.3s; cursor: pointer; text-transform: uppercase; border: none; }
+        
+        .scanline { width: 100%; height: 2px; background: rgba(0, 242, 255, 0.03); position: fixed; z-index: 9999; pointer-events: none; animation: scan 10s linear infinite; }
+        @keyframes scan { from { top: 0; } to { top: 100%; } }
+
+        .typewriter { border-right: 2px solid var(--aeth); white-space: nowrap; overflow: hidden; animation: typing 3s steps(40, end), blink .75s step-end infinite; }
+        @keyframes typing { from { width: 0 } to { width: 100% } }
+        @keyframes blink { from, to { border-color: transparent } 50% { border-color: var(--aeth); } }
+
+        .world-map { background: url('https://upload.wikimedia.org/wikipedia/commons/e/ec/World_map_blank_without_borders.svg') no-repeat center; background-size: contain; filter: invert(1) opacity(0.06); }
+
+        ::-webkit-scrollbar { width: 3px; }
+        ::-webkit-scrollbar-thumb { background: var(--aeth); }
+    </style>
+</head>
+<body>
+
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+<script type="text/babel">
+    const { useState, useEffect, useRef } = React;
+    
+    const CEO_IDENTITY = {
+        name: "Karen Andrea Corredor Acosta",
+        cups: "ES0031400001234567AB",
+        wallet: "8k9X...Sovereign_CEO"
+    };
+
+    const App = () => {
+        const [tab, setTab] = useState('nexus');
+        const [booting, setBooting] = useState(true);
+        const [isAuto, setIsAuto] = useState(true);
+        const [ghostMode, setGhostMode] = useState(true);
+        const [isCrisis, setIsCrisis] = useState(false);
+
+        // DATA STATES
+        const [battery, setBattery] = useState(78);
+        const [wallet, setWallet] = useState({ eurd: 145000, sol: 45.2, glw: 18500, carbon: 245.2 });
+        const [market, setMarket] = useState({ pool: 142.50, freq: 50.00, ree_status: 'NOMINAL', block: 284115000 });
+        const [logs, setLogs] = useState(["[SISTEMA] Sincronizando REE, OMIE y UFD...", "[IA] A.E.T.H.E.L. Core despertando...", "[BÓVEDA] Sincronización MiCA: OK."]);
+        const [devices, setDevices] = useState([
+            { id: 'IA-METER-01', type: 'Medidor Inteligente IA', mode: 'NEGOCIAR', status: 'ONLINE', flow: '0.4kW' },
+            { id: 'BIDI-NODE-X', type: 'Bidireccional IA', mode: 'INYECTAR', status: 'ONLINE', flow: '1.2kW' },
+            { id: 'DATA-AI-CENTER', type: 'IA de Datos', mode: 'EXPORTAR', status: 'BUYING', flow: '1.2MW' }
+        ]);
+        const [history, setHistory] = useState([]);
+        const [sapPGC, setSapPGC] = useState([]);
+
+        // --- MOTOR DE IA VIVA & GRID SYNC ---
+        useEffect(() => {
+            if (booting) return;
+            const engine = setInterval(() => {
+                // 1. Oráculo Fluctuante (REE / OMIE)
+                const newFreq = +(49.91 + Math.random() * 0.18).toFixed(2);
+                const newPool = +(market.pool + (Math.random() * 4 - 2)).toFixed(2);
+                setMarket(m => ({ 
+                    ...m, 
+                    pool: newPool, 
+                    freq: newFreq, 
+                    ree_status: newFreq < 49.95 ? 'CRITICAL' : 'NOMINAL',
+                    block: m.block + 1 
+                }));
+
+                // 2. IA ARBITRAJE & RESCATE AUTOMÁTICO
+                if (isAuto) {
+                    // Rescate de Red (REE detecta baja frecuencia)
+                    if (newFreq < 49.95 && battery > 25) {
+                        setBattery(b => Math.max(0, b - 10));
+                        addTransaction(2800, "Rescate Frecuencia REE (AETHEL IA)");
+                        addLog(`[A.E.T.H.E.L] Grid Crítico (${newFreq}Hz). Inyectando desde Bóveda.`);
+                    }
+                    // Arbitraje por Precio (OMIE alto)
+                    else if (newPool > 155 && battery > 40) {
+                        setBattery(b => Math.max(0, b - 5));
+                        addTransaction(950, "Venta Arbitraje IA (Pool OMIE)");
+                        addLog(`[A.E.T.H.E.L] Pool lucrativo (€${newPool}). Vendiendo excedente.`);
+                    }
+                    // Recarga Inteligente (OMIE bajo)
+                    else if (newPool < 130 && battery < 85) {
+                        setWallet(w => ({ ...w, eurd: w.eurd - 350 }));
+                        setBattery(b => Math.min(100, b + 12));
+                        addLog(`[A.E.T.H.E.L] Energía económica detectada. Recargando batería.`);
+                    }
+                }
+
+                // Recarga Pasiva
+                if (!isAuto && battery < 100) setBattery(b => Math.min(100, b + 0.1));
+
+            }, 3000);
+            return () => clearInterval(engine);
+        }, [market.pool, battery, isAuto, booting]);
+
+        // --- FUNCIONES CORE ---
+        const addLog = (m) => setLogs(prev => [`[${new Date().toLocaleTimeString()}] ${m}`, ...prev].slice(0, 25));
+
+        const addTransaction = (valor, concepto) => {
+            const time = new Date().toLocaleTimeString();
+            const tax = Math.abs(valor) * 0.05;
+            const neto = valor - tax;
+            setWallet(w => ({ ...w, eurd: w.eurd + neto }));
+            setSapPGC(p => [[time, "705", concepto, neto.toFixed(2)], ...p]);
+            setHistory(h => [{ id: `TX-${Math.random().toString(36).substr(2,4).toUpperCase()}`, event: concepto, amount: valor }, ...h]);
+        };
+
+        const registerDevice = (e) => {
+            e.preventDefault();
+            const newDev = {
+                id: e.target.devid.value,
+                type: e.target.devtype.value,
+                mode: e.target.devmode.value,
+                status: 'ONLINE',
+                flow: '0.0kW'
+            };
+            setDevices([newDev, ...devices]);
+            addLog(`[HARDWARE] Dispositivo vinculado: ${newDev.id}`);
+            e.target.reset();
+        };
+
+        const executeSwap = () => {
+            if(wallet.sol < 1) return addLog("[ERROR] SOL insuficiente para Jupiter Bridge.");
+            addLog("[JUPITER V6] Procesando Flash-Swap Solana -> Euro Digital...");
+            setTimeout(() => {
+                const gain = 145.50;
+                addTransaction(gain, "Jupiter Swap (Mainnet)");
+                setWallet(w => ({ ...w, sol: w.sol - 1 }));
+                addLog(`[SUCCESS] Swap finalizado: +€${gain} EURD.`);
+            }, 1500);
+        };
+
+        // BOOT
+        useEffect(() => {
+            setTimeout(() => setBooting(false), 4000);
+        }, []);
+
+        if (booting) {
+            return (
+                <div className="h-screen bg-black flex flex-col items-center justify-center">
+                    <div className="ai-orb-container"><div className="neural-ring"></div><div className="ai-sphere"></div></div>
+                    <p className="text-aeth font-mono mt-12 text-xl typewriter uppercase tracking-widest italic">A.E.T.H.E.L. Core despertando v13.0...</p>
+                </div>
+            );
+        }
+
+        return (
+            <div className="h-screen flex flex-col">
+                <div className="scanline"></div>
+
+                {/* HEADER SOBERANO */}
+                <header className={`glass-panel m-2 p-4 flex justify-between items-center ${market.freq < 49.95 ? 'crisis-alert' : 'border-b-2 border-aeth'}`}>
+                    <div className="flex items-center gap-6">
+                        <div className="ai-orb-container scale-50">
+                            <div className="ai-sphere"></div>
+                            <div className="neural-ring"></div>
+                            <div className="neural-ring-outer"></div>
+                        </div>
+                        <div>
+                            <h1 className="text-2xl font-black text-white italic tracking-tighter uppercase">AETHELGARD <span className="text-aeth font-mono">v13.0</span></h1>
+                            <p className="text-[7px] font-mono text-arctic uppercase tracking-[0.4em]">Autonomous Grid & Fintech OS</p>
+                        </div>
+                    </div>
+                    
+                    <div className="hidden xl:flex flex-grow mx-10 bg-black/60 border border-white/10 rounded-lg p-3 relative h-[55px] justify-between items-center overflow-hidden">
+                        <div className="flex gap-6 font-mono text-[9px]">
+                            <div className="text-center"><p className="text-ree uppercase text-[6px]">REE FREQ</p><p className={market.freq < 49.95 ? 'text-crisis font-black' : 'text-glw font-black'}>{market.freq} Hz</p></div>
+                            <div className="text-center"><p className="text-omie uppercase text-[6px]">OMIE POOL</p><p className="text-white font-black">€{market.pool}</p></div>
+                            <div className="text-center"><p className="text-tx uppercase text-[6px]">SOLANA</p><p className="text-sol font-black">MAINNET</p></div>
+                        </div>
+                        <p className="text-white font-mono text-[10px] typewriter uppercase">A.E.T.H.E.L: "Operando arbitraje autónomo. Grid estable."</p>
+                    </div>
+
+                    <div className="flex gap-8 items-center font-mono">
+                        <div className="text-right border-r border-white/10 pr-6">
+                            <p className="text-[7px] text-glw font-bold uppercase mb-1">IA Arbitraje</p>
+                            <div className="flex items-center gap-2">
+                                <div className="battery-shell"><div className="battery-fill" style={{width: `${battery}%`}}></div></div>
+                                <span className="text-[10px] text-white font-black">{battery.toFixed(0)}%</span>
+                            </div>
+                        </div>
+                        <div className="text-right">
+                            <p className="text-[7px] text-aeth font-black uppercase tracking-[0.2em]">Master Authority</p>
+                            <p className={`text-xs font-black uppercase ${ghostMode ? 'blur-sm' : 'text-white'}`}>{ghostMode ? 'ENC_ID_CEO' : CEO_IDENTITY.name}</p>
+                        </div>
+                    </div>
+                </header>
+
+                <div className="flex-grow flex overflow-hidden p-2 gap-2">
+                    
+                    {/* BARRA LATERAL */}
+                    <aside className="w-44 flex flex-col gap-1">
+                        {[
+                            {id:'nexus', icon:'fa-bolt', name:'Omni Dashboard'},
+                            {id:'syndicate', icon:'fa-robot', name:'IA Syndicate'},
+                            {id:'devices', icon:'fa-microchip', name:'Hardware Hub'},
+                            {id:'vault', icon:'fa-vault', name:'Solana Bridge'},
+                            {id:'sap', icon:'fa-file-invoice-dollar', name:'SAP Ledger'},
+                            {id:'map', icon:'fa-satellite', name:'Grid Map'}
+                        ].map(t => (
+                            <button key={t.id} onClick={() => setTab(t.id)} className={`btn-side ${tab === t.id ? 'active' : ''}`}>
+                                <i className={`fas ${t.icon} mr-3 w-4`}></i>{t.name}
+                            </button>
+                        ))}
+                        <div className="mt-auto p-4 rack-unit border-t border-aeth/20">
+                            <p className="text-[7px] uppercase font-black text-tx mb-2">AETHEL Core Mode</p>
+                            <button onClick={() => setIsAuto(!isAuto)} className={`w-full py-2 rounded text-[8px] font-black ${isAuto ? 'bg-glw text-black' : 'bg-red-900/40 text-red-500'}`}>
+                                {isAuto ? 'AUTÓNOMO' : 'MANUAL'}
+                            </button>
+                        </div>
+                    </aside>
+
+                    {/* CENTRO DE MANDO */}
+                    <main className="flex-grow flex flex-col gap-2 overflow-y-auto pr-1">
+                        
+                        {tab === 'nexus' && (
+                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-2 h-full">
+                                <div className="lg:col-span-2 glass-panel p-10 flex flex-col justify-center items-center text-center border-l-4 border-aeth">
+                                    <h3 className="text-white font-black text-2xl mb-8 uppercase italic tracking-widest">Grid Control Center</h3>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
+                                        <div className="rack-unit p-8 border-t-2 border-ree">
+                                            <p className="text-ree text-[8px] font-black uppercase mb-4">Balance de Red REE</p>
+                                            <p className="text-5xl font-black text-white font-mono">{market.freq} <span className="text-sm">Hz</span></p>
+                                            <p className="text-tx text-[9px] mt-4 uppercase">Estado: {market.ree_status}</p>
+                                        </div>
+                                        <div className="rack-unit p-8 border-t-2 border-omie">
+                                            <p className="text-omie text-[8px] font-black uppercase mb-4">Pool Ibérico OMIE</p>
+                                            <p className="text-5xl font-black text-white font-mono">€{market.pool}</p>
+                                            <p className="text-tx text-[9px] mt-4 uppercase">MWh / Marginal</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex gap-4 w-full mt-10">
+                                        <button onClick={() => addTransaction(3200, "Rescate REE Manual")} className="btn-master bg-ree text-white flex-1 py-4 text-[9px]">INYECCIÓN BALANCE</button>
+                                        <button onClick={() => setBattery(100)} className="btn-master bg-glw text-black flex-1 py-4 text-[9px]">COMPRAR POOL OMIE</button>
+                                    </div>
+                                </div>
+                                <div className="glass-panel p-6 flex flex-col border-l-4 border-glw">
+                                    <h3 className="text-white font-black text-xs uppercase mb-6 tracking-widest italic border-b border-white/10 pb-2">UFD Punto de Suministro</h3>
+                                    <div className="space-y-4 font-mono">
+                                        <div className="rack-unit p-4">
+                                            <p className="text-[7px] text-tx uppercase mb-1">Identificador CUPS</p>
+                                            <p className="text-white font-black text-[10px]">{CEO_IDENTITY.cups}</p>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-2">
+                                            <div className="bg-black/60 p-3 rounded"><p className="text-[6px] text-tx uppercase">Consumo Valle</p><p className="text-xs text-glw font-black">0.2kW</p></div>
+                                            <div className="bg-black/60 p-3 rounded"><p className="text-[6px] text-tx uppercase">Inyección Punta</p><p className="text-xs text-glw font-black">5.4kW</p></div>
+                                        </div>
+                                        <button className="btn-master w-full bg-ufd text-white py-3 mt-4 text-[8px] font-black">Exportar Factura UFD (XML)</button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {tab === 'syndicate' && (
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                {['DeepSeek Grid', 'OpenAI Compute', 'Grok Power', 'Siemens IA', 'Iberdrola Node'].map(name => (
+                                    <div key={name} className="rack-unit p-6 border-t-2 border-neg">
+                                        <div className="flex justify-between mb-4"><span className="text-xl">🤖</span><span className="badge bg-neg/10 text-neg px-2 py-1 rounded text-[7px] font-bold">IA CLIENTE</span></div>
+                                        <h4 className="text-white font-bold text-[10px] mb-1 uppercase tracking-widest">{name}</h4>
+                                        <p className="text-[8px] opacity-60 mb-4 font-mono">Adquiriendo MWh para centros de datos.</p>
+                                        <div className="flex justify-between text-[10px] font-black mb-4"><span>BID:</span><span className="text-glw">€{(market.pool * 1.08).toFixed(2)}</span></div>
+                                        <button onClick={() => addTransaction(1500, `Venta M2M a ${name}`)} className="btn-master bg-neg text-white w-full text-[8px]">ACEPTAR PUJA</button>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+
+                        {tab === 'devices' && (
+                            <div className="space-y-4">
+                                <div className="glass-panel p-8 border-l-4 border-glw">
+                                    <h3 className="text-white font-black text-xl mb-8 uppercase italic">Universal Telemetry Hub</h3>
+                                    <form onSubmit={registerDevice} className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                                        <input name="devid" placeholder="MAC / SERIE / ID" className="bg-black border border-white/10 p-3 text-white font-mono text-[10px]" required />
+                                        <select name="devtype" className="bg-black border border-white/10 p-3 text-white font-mono text-[10px]">
+                                            <option>Medidor Inteligente IA</option>
+                                            <option>Bidireccional IA</option>
+                                            <option>Dispositivo Electrónico</option>
+                                            <option>IA de Datos Externa</option>
+                                        </select>
+                                        <select name="devmode" className="bg-black border border-white/10 p-3 text-white font-mono text-[10px]">
+                                            <option>NEGOCIAR</option>
+                                            <option>INYECTAR</option>
+                                            <option>EXPORTAR</option>
+                                        </select>
+                                        <button className="btn-master bg-glw text-black font-black uppercase">Vincular Nodo</button>
+                                    </form>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    {devices.map(d => (
+                                        <div key={d.id} className="rack-unit p-6 flex justify-between items-center border-l-4 border-arctic">
+                                            <div><p className="text-white font-bold text-[10px] uppercase">{d.id}</p><p className="text-[7px] text-tx uppercase">{d.type}</p></div>
+                                            <div className="text-right"><p className="text-[8px] font-black text-glw">{d.mode}</p><p className="text-[9px] font-mono text-white">{d.flow}</p></div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {tab === 'vault' && (
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 h-full">
+                                <div className="rack-unit p-10 border-l-4 border-eurd">
+                                    <h3 className="text-white font-black text-xl mb-10 uppercase tracking-widest">Sovereign Wallet Ledger</h3>
+                                    <div className="space-y-6 font-mono">
+                                        <div className="bg-black/60 p-6 border border-white/10 rounded">
+                                            <p className="text-[8px] text-tx uppercase font-bold">Euro Digital (EURD) - MiCA Sync</p>
+                                            <p className="text-4xl font-black text-white">€{wallet.eurd.toLocaleString()}</p>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div className="bg-black/60 p-4 border border-sol/30 rounded text-center"><p className="text-[7px] text-sol font-bold uppercase mb-2">Solana (SOL)</p><p className="text-2xl font-black text-white">{wallet.sol}</p></div>
+                                            <div className="bg-black/60 p-4 border border-glw/30 rounded text-center"><p className="text-[7px] text-glw font-bold uppercase mb-2">GLOW (GLW)</p><p className="text-2xl font-black text-white">{wallet.glw}</p></div>
+                                        </div>
+                                        <button onClick={() => setGhostMode(!ghostMode)} className="btn-master w-full bg-white/5 border border-white/10 text-tx py-4 text-[9px]">GHOST PROTOCOL: {ghostMode ? 'ACTIVO' : 'INACTIVO'}</button>
+                                    </div>
+                                </div>
+                                <div className="glass-panel p-10 flex flex-col justify-center items-center text-center">
+                                    <h3 className="text-white font-black text-xl mb-6 uppercase italic tracking-widest">Jupiter V6 Swap Protocol</h3>
+                                    <div className="w-full bg-black/60 p-6 rounded-lg border border-white/10 flex justify-between items-center mb-8">
+                                        <div><p className="text-[8px] text-tx">PAY</p><p className="text-xl font-black text-sol">1.00 SOL</p></div>
+                                        <i className="fas fa-arrow-right text-tx text-xl"></i>
+                                        <div><p className="text-[8px] text-tx">RECEIVE</p><p className="text-xl font-black text-white">€146.40 EURD</p></div>
+                                    </div>
+                                    <button onClick={executeSwap} className="btn-master bg-sol text-white w-full py-6 font-black text-sm">PROCESAR FLASH-SWAP</button>
+                                    <p className="text-[7px] mt-4 text-tx">Liquidación instantánea vía Solana Mainnet</p>
+                                </div>
+                            </div>
+                        )}
+
+                        {tab === 'sap' && (
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 h-full">
+                                <div className="glass-panel p-6 border-t-2 border-eurd flex flex-col">
+                                    <div className="flex justify-between items-center mb-6">
+                                        <h3 className="text-eurd font-black text-xs uppercase tracking-widest">PGC España Compliance</h3>
+                                        <button className="text-[7px] bg-eurd/20 text-eurd p-2 rounded">XML EXPORT</button>
+                                    </div>
+                                    <div className="space-y-1 font-mono text-[8px] overflow-y-auto max-h-[400px]">
+                                        {sapPGC.map((r, i) => <div key={i} className="flex justify-between bg-white/5 p-2 rounded mb-1"><span>{r[2]}</span><span className="text-glw">€{r[3]}</span></div>)}
+                                    </div>
+                                </div>
+                                <div className="glass-panel p-6 border-t-2 border-aeth">
+                                    <h3 className="text-aeth font-black text-xs uppercase mb-6 tracking-widest italic">5 Pilares de Liquidación</h3>
+                                    <div className="w-full grid grid-cols-5 gap-1 h-14 text-[7px] font-black text-center leading-[56px] text-black">
+                                        <div className="bg-glw rounded-l">CEO</div><div className="bg-sol">RED</div>
+                                        <div className="bg-eurd text-white">CAPITAL</div><div className="bg-arctic">I+D</div>
+                                        <div className="bg-aeth text-white rounded-r">W3</div>
+                                    </div>
+                                    <p className="mt-10 text-[9px] italic opacity-60 text-center uppercase tracking-widest">Autosplit Soberano del 20% Activo.</p>
+                                </div>
+                            </div>
+                        )}
+
+                        {tab === 'map' && (
+                            <div className="glass-panel h-full world-map relative rounded-lg border border-white/5">
+                                <div className="absolute top-4 left-4 p-4 bg-black/80 border border-aeth/30 rounded font-mono text-[10px]">
+                                    <p className="text-aeth font-bold mb-1">GRID MESH STATUS</p>
+                                    <p className="text-white uppercase">Region: IBERIA (SYNC)</p>
+                                    <p className="text-white uppercase">Frequency: {market.freq} Hz</p>
+                                </div>
+                                <div className="absolute top-[40%] left-[48%] flex flex-col items-center">
+                                    <div className="w-2 h-2 rounded-full bg-ree shadow-[0_0_10px_var(--ree)] animate-pulse"></div>
+                                    <span className="text-[6px] font-bold text-white bg-black/80 p-1 mt-1">MADRID (REE)</span>
+                                </div>
+                                <div className="absolute top-[65%] left-[32%] flex flex-col items-center">
+                                    <div className="w-2 h-2 rounded-full bg-glw shadow-[0_0_10px_var(--glw)] animate-pulse"></div>
+                                    <span className="text-[6px] font-bold text-white bg-black/80 p-1 mt-1">BOGOTÁ (XM)</span>
+                                </div>
+                            </div>
+                        )}
+
+                    </main>
+
+                    {/* FEED DERECHO */}
+                    <aside className="w-64 flex flex-col gap-2">
+                        <div className="glass-panel p-4 flex flex-col h-[350px]">
+                            <h3 className="text-aeth font-black text-[9px] mb-4 uppercase flex justify-between italic tracking-widest">A.E.T.H.E.L. Sentinel Feed <i className="fas fa-satellite-dish animate-pulse"></i></h3>
+                            <div className="flex-grow overflow-y-auto font-mono text-[7px] space-y-2 pr-2">
+                                {logs.map((l, i) => <div key={i} className="border-l-2 border-aeth bg-white/5 p-2 text-tx">{l}</div>)}
+                            </div>
+                        </div>
+                        <div className="glass-panel p-6 border-l-4 border-glw flex flex-col h-full overflow-y-auto">
+                            <h3 className="text-white font-black text-[9px] uppercase tracking-widest border-b border-white/10 pb-2 mb-4">Pipeline Operativo</h3>
+                            <div className="space-y-4">
+                                {history.map(h => (
+                                    <div key={h.id} className="text-[8px] bg-white/5 p-3 rounded border border-white/5">
+                                        <div className="flex justify-between font-bold mb-1"><span className="text-white uppercase truncate">{h.event}</span><span className="text-glw">€{h.amount}</span></div>
+                                        <div className="flex justify-between opacity-60 font-mono"><span>{h.id}</span><span>MiCA: OK</span></div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </aside>
+                </div>
+
+                <footer className="m-2 p-3 glass-panel flex justify-between items-center text-[7px] text-gray-600 uppercase tracking-widest opacity-60">
+                    <div>AETHELGARD OMNI-CORE SUPREMA // © {CEO_IDENTITY.name} // v13.0 TOTAL</div>
+                    <div className="text-aeth font-black">REE SYNC: OK // OMIE PRICE: {market.pool}€ // UFD CUPS: {CEO_IDENTITY.cups}</div>
+                </footer>
+            </div>
+        );
+    };
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+</script>
+
+</body>
+</html>
